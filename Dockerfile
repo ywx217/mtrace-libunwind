@@ -28,5 +28,3 @@ RUN cd /root/ \
     && ./configure \
     && make
 RUN cd /root/libunwind-1.1/ && make install
-
-ENTRYPOINT ["/bin/bash"]
