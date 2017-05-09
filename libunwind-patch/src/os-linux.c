@@ -59,6 +59,12 @@ inline void insertArray(Array *a, CacheItem element) {
 }
 
 inline void freeArray(Array *a) {
+  int i=0;
+  for (; i < a->used; ++i) {
+    if (a->array[i].path) {
+      free(a->array[i].path);
+    }
+  }
   free(a->array);
   a->array = NULL;
   a->used = a->size = 0;
