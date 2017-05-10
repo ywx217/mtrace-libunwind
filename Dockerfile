@@ -14,6 +14,7 @@ RUN apt-get update -y \
         autoconf \
         python-pip \
         libtool \
+        libbz2-dev \
         && pip install Cython
 
 # build and install libboost 1.57
