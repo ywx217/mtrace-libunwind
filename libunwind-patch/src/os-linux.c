@@ -105,25 +105,23 @@ inline void _refresh_elf_image_cache(pid_t pid)
   maps_close(&mi);
 }
 
-inline char* get_elf_image_by_cache(pid_t pid, unw_word_t ip,
+inline CacheItem* get_elf_image_by_cache(pid_t pid, unw_word_t ip,
                            unsigned long *segbase, unsigned long *mapoff)
 {
-  _refresh_elf_image_cache(pid);
-  if(!_g_elf_image_cache)
-    return NULL;
-  CacheItem *s, *e;
-  s = _g_elf_image_cache->array;
-  e = s + _g_elf_image_cache->used;
-  for (; s < e; ++s)
-  {
-    *segbase = s->low;
-    *mapoff = s->offset;
-    if (ip >= s->low && ip < s->high)
+    _refresh_elf_image_cache(pid);
+    if(!_g_elf_image_cache)
+        return NULL;
+    CacheItem *s, *e;
+    s = _g_elf_image_cache->array;
+    e = s + _g_elf_image_cache->used;
+    for (; s < e; ++s)
     {
-      return s->path;
+        *segbase = s->low;
+        *mapoff = s->offset;
+        if (ip >= s->low && ip < s->high) {
+            return s;
+        }
     }
-  }
-  return NULL;
 }
 
 PROTECTED void tdep_clear_elf_image_cache()
@@ -147,22 +145,26 @@ PROTECTED int tdep_get_elf_image(struct elf_image *ei, pid_t pid, unw_word_t ip,
                                  unsigned long *segbase, unsigned long *mapoff,
                                  char *path, size_t pathlen)
 {
-  int rc;
-  char *sFoundPath = NULL;
+    int rc;
+    char *sFoundPath = NULL;
+    CacheItem *pFoundItem = NULL;
 
-  sFoundPath = get_elf_image_by_cache(pid, ip, segbase, mapoff);
-  if (!sFoundPath)
-  {
-    return -1;
-  }
-  if (path) 
-  {
-    strncpy(path, sFoundPath, pathlen);
-  }
-  int suffix_head_offset = local_unw_str_endswith(sFoundPath, " (deleted)");
-  if (suffix_head_offset > 0) {
-    sFoundPath[suffix_head_offset] = '\0';
-  }
-  rc = elf_map_image(ei, sFoundPath);
-  return rc;
+    pFoundItem = get_elf_image_by_cache(pid, ip, segbase, mapoff);
+    if (!pFoundItem) {
+        return -1;
+    }
+    if (path) {
+        strncpy(path, pFoundItem->path, pathlen);
+    }
+    int suffix_head_offset = local_unw_str_endswith(pFoundItem->path, " (deleted)");
+    if (suffix_head_offset > 0) {
+        pFoundItem->path[suffix_head_offset] = '\0';
+    }
+    Debug(4, "get_elf_image '%s' low=%lx high=%lx\n", path, pFoundItem->low, pFoundItem->high);
+    if (strcmp(pFoundItem->path, "[vdso]") == 0) {
+        rc = elf_map_image_vdso(pid, ei, pFoundItem->low, pFoundItem->high - pFoundItem->low);
+    } else {
+        rc = elf_map_image(ei, pFoundItem->path);
+    }
+    return rc;
 }
