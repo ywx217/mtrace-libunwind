@@ -122,6 +122,7 @@ inline CacheItem* get_elf_image_by_cache(pid_t pid, unw_word_t ip,
             return s;
         }
     }
+    return NULL;
 }
 
 PROTECTED void tdep_clear_elf_image_cache()
