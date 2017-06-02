@@ -75,34 +75,69 @@ elf_w (valid_object) (struct elf_image *ei)
 	  && ((uint8_t *) ei->image)[EI_VERSION] <= EV_CURRENT);
 }
 
+#define USE_VDSO_BUFF
+
+#ifdef USE_VDSO_BUFF
+static char* _g_vdso_buff = NULL;
+static pid_t _g_vdso_pid = 0;
+static unsigned long _g_vdso_len = 0;
+#endif
+
+static inline char*
+elf_get_vdso(pid_t pid, unsigned long low, unsigned long* length)
+{
+    // read tracee process vdso memory
+    char *buff;
+    #ifdef USE_VDSO_BUFF
+    if (_g_vdso_pid == pid && _g_vdso_buff) {
+        if (*length > _g_vdso_len)
+            *length = _g_vdso_len;
+        return _g_vdso_buff;
+    }
+    #endif
+
+    buff = malloc(*length);
+    struct iovec local_iov = {(void*)buff, *length};
+    struct iovec remote_iov = {(void*)low, *length};
+    *length = process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0);
+    if (errno || *length <= 0) {
+        free(buff);
+        return NULL;
+    }
+    #ifdef USE_VDSO_BUFF
+    if (_g_vdso_buff) {
+        free(_g_vdso_buff);
+    }
+    _g_vdso_pid = pid;
+    _g_vdso_buff = buff;
+    _g_vdso_len = *length;
+    #endif
+    return buff;
+}
+
 static inline int
 elf_map_image_vdso (pid_t pid, struct elf_image *ei, unsigned long low, unsigned long length)
 {
     // read tracee process vdso memory
-    char name[] = "/tmp/unwind-vdso-XXXXXX";
-    int fd = mkstemp(name);
-    if (fd < 0) {
-        Debug (4, "elf_map_image_vdso tmpfile create failed\n");
-        return -1;
-    }
-    char *buff = malloc(length);
-    struct iovec local_iov = {(void*)buff, length};
-    struct iovec remote_iov = {(void*)low, length};
-    length = process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0);
-    if (errno || length <= 0) {
-        free(buff);
+    char *buff = elf_get_vdso(pid, low, &length);
+    if (!buff) {
         Debug (4, "elf_map_image_vdso memcpy failed\n");
         return -1;
     }
-    write (fd, buff, length);
-    free(buff);
     ei->size = length;
-    ei->image = mmap(NULL, ei->size, PROT_READ, MAP_PRIVATE, fd, 0);
-    close(fd);
-    if (ei->image == MAP_FAILED) {
+    ei->image = mmap(NULL, ei->size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if  (!ei->image == MAP_FAILED) {
+        #ifndef USE_VDSO_BUFF
+        free(buff);
+        #endif
         Debug (4, "elf_map_image_vdso mmap failed\n");
         return -1;
     }
+    memcpy(ei->image, buff, length);
+    #ifndef USE_VDSO_BUFF
+    free(buff);
+    #endif
+
     if (!elf_w (valid_object) (ei)) {
         Debug (4, "elf_map_image_vdso invalid object\n");
         munmap(ei->image, ei->size);
