@@ -826,10 +826,18 @@ uncached_dwarf_find_save_locs (struct dwarf_cursor *c)
   }
 
   if ((ret = create_state_record_for (c, &sr, c->ip)) < 0)
-    return ret;
+  {
+      /* free unwind_info alloc'd by fetch_proc_info above */
+      put_unwind_info (c, &c->pi);
+      return ret;
+  }
 
   if ((ret = apply_reg_state (c, &sr.rs_current)) < 0)
-    return ret;
+  {
+      /* free unwind_info alloc'd by fetch_proc_info above */
+      put_unwind_info (c, &c->pi);
+      return ret;
+  }
 
   put_unwind_info (c, &c->pi);
   return 0;
