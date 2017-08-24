@@ -129,6 +129,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local)
   Debug (4, "loading string table of size %zd\n",
 	   sec_hdrs[shstrndx].sh_size);
   stringtab = malloc (sec_hdrs[shstrndx].sh_size);
+  Debug(8, "mmap ptr=%p size=%d\n", stringtab, sec_hdrs[shstrndx].sh_size);
   fseek (f, sec_hdrs[shstrndx].sh_offset, SEEK_SET);
   if (fread (stringtab, 1, sec_hdrs[shstrndx].sh_size, f) != sec_hdrs[shstrndx].sh_size)
     goto file_error;
@@ -141,6 +142,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local)
         {
 	  *bufsize = sec_hdrs[i].sh_size;
 	  *buf = malloc (*bufsize);
+	  Debug(8, "mmap ptr=%p size=%d\n", buf, bufsize);
 
 	  fseek (f, sec_hdrs[i].sh_offset, SEEK_SET);
 	  if (fread (*buf, 1, *bufsize, f) != *bufsize)
@@ -153,6 +155,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local)
 	{
 	  linksize = sec_hdrs[i].sh_size;
 	  linkbuf = malloc (linksize);
+	  Debug(8, "mmap ptr=%p size=%d\n", linkbuf, linksize);
 
 	  fseek (f, sec_hdrs[i].sh_offset, SEEK_SET);
 	  if (fread (linkbuf, 1, linksize, f) != linksize)
@@ -164,7 +167,9 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local)
     }
 
   free (stringtab);
+  Debug(8, "munmap ptr=%p size=0\n", stringtab);
   free (sec_hdrs);
+  Debug(8, "munmap ptr=%p size=0\n", sec_hdrs);
 
   fclose (f);
 
@@ -172,6 +177,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local)
   if (linkbuf && is_local == -1)
     {
       free (linkbuf);
+      Debug(8, "munmap ptr=%p size=0\n", linkbuf);
       return 1;
     }
 
@@ -183,8 +189,10 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local)
 
       /* XXX: Don't bother with the checksum; just search for the file.  */
       basedir = malloc (strlen (file) + 1);
+	  Debug(8, "mmap ptr=%p size=%d\n", basedir, strlen(file)+1);
       newname = malloc (strlen (linkbuf) + strlen (debugdir)
 			+ strlen (file) + 9);
+	  Debug(8, "mmap ptr=%p size=%d\n", newname, strlen(linkbuf) + strlen(debugdir) + strlen(file) + 9);
 
       p = strrchr (file, '/');
       if (p != NULL)
@@ -218,17 +226,23 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local)
 	}
 
       free (basedir);
+      Debug(8, "munmap ptr=%p size=0\n", basedir);
       free (newname);
+      Debug(8, "munmap ptr=%p size=0\n", newname);
     }
   free (linkbuf);
+  Debug(8, "munmap ptr=%p size=0\n", linkbuf);
 
   return 0;
 
 /* An error reading image file. Release resources and return error code */
 file_error:
   free(stringtab);
+  Debug(8, "munmap ptr=%p size=0\n", stringtab);
   free(sec_hdrs);
+  Debug(8, "munmap ptr=%p size=0\n", sec_hdrs);
   free(linkbuf);
+  Debug(8, "munmap ptr=%p size=0\n", linkbuf);
   fclose(f);
 
   return 1;
@@ -311,6 +325,7 @@ locate_debug_info (unw_addr_space_t as, unw_word_t addr, const char *dlname,
   if (!err)
     {
       fdesc = malloc (sizeof (struct unw_debug_frame_list));
+      Debug(8, "mmap ptr=%p size=%d\n", fdesc, sizeof(struct unw_debug_frame_list));
 
       fdesc->start = start;
       fdesc->end = end;

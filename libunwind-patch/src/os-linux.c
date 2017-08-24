@@ -44,6 +44,7 @@ typedef struct {
 
 inline void initArray(Array *a, size_t initialSize) {
   a->array = (CacheItem *)malloc(initialSize * sizeof(CacheItem));
+  Debug(8, "mmap ptr=%p size=%d\n", a->array, initialSize * sizeof(CacheItem));
   a->used = 0;
   a->size = initialSize;
 }
@@ -63,9 +64,11 @@ inline void freeArray(Array *a) {
   for (; i < a->used; ++i) {
     if (a->array[i].path) {
       free(a->array[i].path);
+      Debug(8, "munmap ptr=%p size=0\n", a->array[i].path);
     }
   }
   free(a->array);
+  Debug(8, "munmap ptr=%p size=0\n", a->array);
   a->array = NULL;
   a->used = a->size = 0;
 }
@@ -77,6 +80,8 @@ void clear_elf_image_cache()
     if (!_g_elf_image_cache)
         return;
     freeArray(_g_elf_image_cache);
+    free(_g_elf_image_cache);
+    Debug(8, "munmap ptr=%p size=0\n", _g_elf_image_cache);
     _g_elf_image_cache = NULL;
 }
 
@@ -91,6 +96,7 @@ inline void _refresh_elf_image_cache(pid_t pid)
   if (maps_init(&mi, pid) < 0)
     return;
   _g_elf_image_cache = (Array *)malloc(sizeof(Array));
+  Debug(8, "mmap ptr=%p size=%d\n", _g_elf_image_cache, sizeof(Array));
   initArray(_g_elf_image_cache, 500);
   // iter maps
   while (maps_next(&mi, &low, &high, &offset))
@@ -99,6 +105,7 @@ inline void _refresh_elf_image_cache(pid_t pid)
     item.high = high;
     item.offset = offset;
     item.path = malloc(strlen(mi.path) + 1);
+    Debug(8, "mmap ptr=%p size=%d\n", item.path, strlen(mi.path) + 1);
     strcpy(item.path, mi.path);
     insertArray(_g_elf_image_cache, item);
   }

@@ -330,6 +330,12 @@ dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
 
   if (need_unwind_info)
     {
+      if (pi->unwind_info)
+      {
+        /* free unwind_info allocated before */
+        mempool_free (&dwarf_cie_info_pool, pi->unwind_info);
+        pi->unwind_info = NULL;
+      }
       pi->format = UNW_INFO_FORMAT_TABLE;
       pi->unwind_info_size = sizeof (dci);
       pi->unwind_info = mempool_alloc (&dwarf_cie_info_pool);

@@ -97,16 +97,19 @@ elf_get_vdso(pid_t pid, unsigned long low, unsigned long* length)
     #endif
 
     buff = malloc(*length);
+    Debug(8, "mmap ptr=%p size=%d\n", buff, *length);
     struct iovec local_iov = {(void*)buff, *length};
     struct iovec remote_iov = {(void*)low, *length};
     *length = process_vm_readv(pid, &local_iov, 1, &remote_iov, 1, 0);
     if (errno || *length <= 0) {
         free(buff);
+        Debug(8, "munmap ptr=%p size=0\n", buff);
         return NULL;
     }
     #ifdef USE_VDSO_BUFF
     if (_g_vdso_buff) {
         free(_g_vdso_buff);
+        Debug(8, "munmap ptr=%p size=0\n", _g_vdso_buff);
     }
     _g_vdso_pid = pid;
     _g_vdso_buff = buff;
@@ -126,9 +129,11 @@ elf_map_image_vdso (pid_t pid, struct elf_image *ei, unsigned long low, unsigned
     }
     ei->size = length;
     ei->image = mmap(NULL, ei->size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    Debug(8, "mmap ptr=%p size=%d\n", ei->image, ei->size);
     if  (!ei->image == MAP_FAILED) {
         #ifndef USE_VDSO_BUFF
         free(buff);
+        Debug(8, "munmap ptr=%p size=0\n", buff);
         #endif
         Debug (4, "elf_map_image_vdso mmap failed\n");
         return -1;
@@ -136,11 +141,13 @@ elf_map_image_vdso (pid_t pid, struct elf_image *ei, unsigned long low, unsigned
     memcpy(ei->image, buff, length);
     #ifndef USE_VDSO_BUFF
     free(buff);
+    Debug(8, "munmap ptr=%p size=0\n", buff);
     #endif
 
     if (!elf_w (valid_object) (ei)) {
         Debug (4, "elf_map_image_vdso invalid object\n");
         munmap(ei->image, ei->size);
+        Debug(8, "munmap ptr=%p size=%d\n", ei->image, ei->size);
         return -1;
     }
     Debug (4, "elf_map_image_vdso success\n");
@@ -170,6 +177,7 @@ elf_map_image (struct elf_image *ei, const char *path)
 
   ei->size = stat.st_size;
   ei->image = mmap (NULL, ei->size, PROT_READ, MAP_PRIVATE, fd, 0);
+  Debug(8, "mmap ptr=%p size=%d\n", ei->image, ei->size);
   close (fd);
   if (ei->image == MAP_FAILED) {
     Debug (4, "elf_map_image %s map failed\n", path);
@@ -180,6 +188,7 @@ elf_map_image (struct elf_image *ei, const char *path)
   {
     Debug (4, "elf_map_image %s invalid object\n", path);
     munmap(ei->image, ei->size);
+    Debug(8, "munmap ptr=%p size=%d\n", ei->image, ei->size);
     return -1;
   }
 
