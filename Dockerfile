@@ -2,7 +2,7 @@
 FROM debian:jessie
 MAINTAINER Wenxuan Yang "ywx217@gmail.com"
 RUN apt-get update -y \
-    && apt-get install -y \
+    && apt-get install -y --no-install-recommends \
         build-essential \
         'g++' \
         git \
@@ -12,9 +12,14 @@ RUN apt-get update -y \
         python2.7 \
         python2.7-dev \
         autoconf \
+        automake \
         python-pip \
         libtool \
         libbz2-dev \
+        libboost-dev \
+        libboost-date-time-dev \
+        libboost-filesystem-dev \
+        libboost-system-dev \
         && pip install Cython
 
 # build patched libunwind
