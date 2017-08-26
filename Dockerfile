@@ -13,6 +13,7 @@ RUN apt-get update -y \
         python2.7-dev \
         autoconf \
         automake \
+        cmake \
         python-pip \
         libtool \
         libbz2-dev \
