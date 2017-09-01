@@ -21,6 +21,7 @@ RUN apt-get update -y \
         libboost-date-time-dev \
         libboost-filesystem-dev \
         libboost-system-dev \
+        rsync \
         && pip install Cython
 
 # build patched libunwind
