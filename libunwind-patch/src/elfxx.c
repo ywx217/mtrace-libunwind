@@ -135,6 +135,13 @@ elf_w (lookup_symbol) (unw_addr_space_t as,
                         Debug (16, "0x%016lx info=0x%02x %s\n",
                                 (long) val, sym->st_info, strtab + sym->st_name);
 
+                        if (ip < val)
+                            continue;
+                        if (ip >= val + sym->st_size) {
+                            if ((Elf_W (Addr)) (ip - val) < *min_dist)
+                                *min_dist = (Elf_W (Addr)) (ip - val);
+                            continue;
+                        }
                         if ((Elf_W (Addr)) (ip - val) < *min_dist)
                         {
                             *min_dist = (Elf_W (Addr)) (ip - val);
@@ -144,6 +151,10 @@ elf_w (lookup_symbol) (unw_addr_space_t as,
                                     ? -UNW_ENOMEM : 0);
                         }
                     }
+                }
+                if (ret == -UNW_ENOINFO) {
+                    snprintf(buf, buf_len, "0x%lx", ip - load_offset);
+                    ret = 0;
                 }
                 break;
 
