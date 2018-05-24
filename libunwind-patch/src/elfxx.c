@@ -361,12 +361,23 @@ elf_w (get_proc_name) (unw_addr_space_t as, pid_t pid, unw_word_t ip,
   unsigned long segbase, mapoff;
   struct elf_image ei;
   int ret;
+  const size_t N = 1024;
+  char path[N];
+  char name[N];
+  Elf_W (Addr) load_offset;
 
-  ret = tdep_get_elf_image (&ei, pid, ip, &segbase, &mapoff, NULL, 0);
+  ret = tdep_get_elf_image (&ei, pid, ip, &segbase, &mapoff, path, N);
   if (ret < 0)
     return ret;
 
-  ret = elf_w (get_proc_name_in_image) (as, &ei, segbase, mapoff, ip, buf, buf_len, offp);
+  path[N - 1] = '\0';
+  ret = elf_w (get_proc_name_in_image) (as, &ei, segbase, mapoff, ip, name, N, offp);
+  load_offset = elf_w (get_load_offset) (&ei, segbase, mapoff);
+  if (load_offset != 0 && strncmp(name, "0x", 2) == 0 && strlen(path) > 0) {
+    snprintf(buf, buf_len, "%s@%s", path, name);
+  } else {
+    strncpy(buf, name, buf_len);
+  }
 
   munmap (ei.image, ei.size);
   Debug(8, "munmap ptr=%p size=%d\n", ei.image, ei.size);
