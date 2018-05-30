@@ -1,5 +1,5 @@
 # mtrace compile environment
-FROM debian:jessie
+FROM debian:stretch
 MAINTAINER Wenxuan Yang "ywx217@gmail.com"
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends \
