@@ -8,6 +8,7 @@ RUN apt-get update -y \
         git \
         liblzma-dev \
         libssl-dev \
+        libcurl4-openssl-dev \
         libcrypto++-dev \
         python2.7 \
         python2.7-dev \
