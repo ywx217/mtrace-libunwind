@@ -8,6 +8,7 @@ RUN apt-get update -y \
         git \
         liblzma-dev \
         libssl-dev \
+        libcurl4-openssl-dev \
         libcrypto++-dev \
         python2.7 \
         python2.7-dev \
@@ -34,5 +35,5 @@ RUN cd /root/ \
     && find ../libunwind-patch -type f \
     && autoreconf -i \
     && ./configure \
-    && make
-RUN cd /root/libunwind-1.1/ && make install
+    && make && make install \
+    && cd .. && rm -rf libunwind-1.1
