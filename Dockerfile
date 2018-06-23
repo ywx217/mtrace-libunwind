@@ -34,5 +34,5 @@ RUN cd /root/ \
     && find ../libunwind-patch -type f \
     && autoreconf -i \
     && ./configure \
-    && make
-RUN cd /root/libunwind-1.1/ && make install
+    && make && make install \
+    && cd .. && rm -rf libunwind-1.1
