@@ -8,7 +8,6 @@ RUN apt-get update -y \
         git \
         liblzma-dev \
         libssl-dev \
-        libcurl4-openssl-dev \
         libcrypto++-dev \
         python2.7 \
         python2.7-dev \
@@ -37,3 +36,11 @@ RUN cd /root/ \
     && ./configure \
     && make && make install \
     && cd .. && rm -rf libunwind-1.1
+
+# build libcurl for static linking
+RUN git clone https://github.com/curl/curl.git -b curl-7_60_0 \
+    && cd curl && mkdir build && cd build \
+    && cmake -DCURL_STATIC_LIB=ON -DHTTP_ONLY=ON -DCMAKE_USE_LIBSSH2=OFF .. \
+    && make \
+    && cp lib/libcurl.a /usr/lib/x86_64-linux-gnu/libcurl.a \
+    && cd ../../ && rm -rf curl
