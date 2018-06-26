@@ -14,15 +14,10 @@ RUN apt-get update -y \
         autoconf \
         automake \
         cmake \
-        python-pip \
         libtool \
         libbz2-dev \
-        libboost-dev \
-        libboost-date-time-dev \
-        libboost-filesystem-dev \
-        libboost-system-dev \
-        rsync \
-        && pip install Cython
+        openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # build patched libunwind
 COPY libunwind-1.1.tar /root/
@@ -40,7 +35,7 @@ RUN cd /root/ \
 # build libcurl for static linking
 RUN git clone https://github.com/curl/curl.git -b curl-7_60_0 \
     && cd curl && mkdir build && cd build \
-    && cmake -DCURL_STATIC_LIB=ON -DHTTP_ONLY=ON -DCMAKE_USE_LIBSSH2=OFF .. \
+    && cmake -DCURL_STATICLIB=ON -DHTTP_ONLY=ON -DCMAKE_USE_LIBSSH2=OFF .. \
     && make \
     && cp lib/libcurl.a /usr/lib/x86_64-linux-gnu/libcurl.a \
     && cd ../../ && rm -rf curl
