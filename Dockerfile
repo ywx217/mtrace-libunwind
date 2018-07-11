@@ -17,6 +17,7 @@ RUN apt-get update -y \
         libtool \
         libbz2-dev \
         openssl ca-certificates \
+        rsync \
     && rm -rf /var/lib/apt/lists/*
 
 # build patched libunwind
